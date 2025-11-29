@@ -1,0 +1,41 @@
+name: Auto Release APK on Every Commit
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Make gradlew Executable
+        run: chmod +x ./gradlew
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease
+
+      - name: Create Version Name from Commit
+        id: version
+        run: echo "VERSION=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
+
+      - name: Create GitHub Release Automatically
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.VERSION }}
+          name: "Auto Release ${{ env.VERSION }}"
+          body: "Automatic release generated from latest commit."
+          files: app/build/outputs/apk/release/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
